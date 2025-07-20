@@ -25,21 +25,17 @@ var AppControllerSet = wire.NewSet(
 )
 
 func (a AppController) AppCreate(ctx context.Context, req *m.AppCreateReq) (res *m.AppCreateResp, err error) {
-	//TODO implement me
-	panic("implement me")
+	return a.AppCreate(ctx, req)
 }
 
 func (a AppController) AppUpdate(ctx context.Context, req *m.AppUpdateReq) (res *basic.Response, err error) {
-	//TODO implement me
-	panic("implement me")
+	return a.AppUpdate(ctx, req)
 }
 
 func (a AppController) AppGet(ctx context.Context, req *m.AppGetReq) (res *m.AppGetResp, err error) {
-	//TODO implement me
-	panic("implement me")
+	return a.AppGet(ctx, req)
 }
 
 func (a AppController) AppDelete(ctx context.Context, req *m.AppDeleteReq) (res *basic.Response, err error) {
-	//TODO implement me
-	panic("implement me")
+	return a.AppDelete(ctx, req)
 }

@@ -33,6 +33,7 @@ func NewErrno(code codes.Code, err error) *Errno {
 var (
 	ErrInvalidParams = NewErrno(codes.InvalidArgument, errors.New("参数错误"))
 	ErrCall          = NewErrno(codes.Unknown, errors.New("调用接口失败，请重试"))
+	ErrAuth          = NewErrno(codes.PermissionDenied, errors.New("无权限调用"))
 )
 
 // 数据库相关错误

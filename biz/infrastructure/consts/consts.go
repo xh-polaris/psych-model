@@ -11,3 +11,18 @@ const (
 	Form       = "form"
 	NotEqual   = "$ne"
 )
+
+// status
+const (
+	Active  = 0
+	Deleted = 1
+)
+
+// app type
+const (
+	All    = 0
+	Chat   = 1
+	Tts    = 2
+	Asr    = 3
+	Repost = 4
+)

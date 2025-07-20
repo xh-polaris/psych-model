@@ -1,8 +1,14 @@
 package unit
 
 import (
+	"context"
+	"errors"
 	"github.com/xh-polaris/psych-model/biz/infrastructure/config"
+	"github.com/xh-polaris/psych-model/biz/infrastructure/consts"
 	"github.com/zeromicro/go-zero/core/stores/monc"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"time"
 )
 
 const (
@@ -22,4 +28,37 @@ func NewMongoMapper(config *config.Config) *MongoMapper {
 	return &MongoMapper{
 		conn: conn,
 	}
+}
+
+func (m *MongoMapper) InsertWithEcho(ctx context.Context, appConfig *UnitAppConfig) (string, error) {
+	appConfig.ID = primitive.NewObjectID()
+	appConfig.CreateTime = time.Now()
+	appConfig.UpdateTime = appConfig.CreateTime
+	res, err := m.conn.InsertOneNoCache(ctx, appConfig)
+	if err != nil {
+		return "", err
+	}
+	// 获取回显id
+	id := res.InsertedID.(primitive.ObjectID).Hex()
+	return id, err
+}
+
+func (m *MongoMapper) Update(ctx context.Context, appConfig *UnitAppConfig) error {
+	appConfig.UpdateTime = time.Now()
+	_, err := m.conn.UpdateByIDNoCache(ctx, appConfig.ID, bson.M{"$set": appConfig})
+	return err
+}
+
+func (m *MongoMapper) FindOneByUnitId(ctx context.Context, id string) (*UnitAppConfig, error) {
+	var appConfig UnitAppConfig
+	err := m.conn.FindOneNoCache(ctx, &appConfig, bson.M{
+		consts.UnitId: id,
+	})
+	if err != nil {
+		if errors.Is(err, monc.ErrNotFound) {
+			return nil, consts.ErrNotFound
+		}
+		return nil, err
+	}
+	return &appConfig, nil
 }

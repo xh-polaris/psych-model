@@ -24,16 +24,13 @@ var UnitAppConfigControllerSet = wire.NewSet(
 )
 
 func (u UnitAppConfigController) UnitAppConfigCreate(ctx context.Context, req *m.UnitAppConfigCreateReq) (res *m.UnitAppConfigCreateResp, err error) {
-	//TODO implement me
-	panic("implement me")
+	return u.UnitAppConfigCreate(ctx, req)
 }
 
 func (u UnitAppConfigController) UnitAppConfigUpdate(ctx context.Context, req *m.UnitAppConfigUpdateReq) (res *basic.Response, err error) {
-	//TODO implement me
-	panic("implement me")
+	return u.UnitAppConfigUpdate(ctx, req)
 }
 
 func (u UnitAppConfigController) UnitAppConfigGet(ctx context.Context, req *m.UnitAppConfigGetReq) (res *m.UnitAppConfigGetResp, err error) {
-	//TODO implement me
-	panic("implement me")
+	return u.UnitAppConfigGet(ctx, req)
 }
