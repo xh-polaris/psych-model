@@ -6,7 +6,7 @@ import (
 	"github.com/xh-polaris/psych-idl/kitex_gen/basic"
 	m "github.com/xh-polaris/psych-idl/kitex_gen/model"
 	"github.com/xh-polaris/psych-model/biz/infrastructure/consts"
-	untmapper "github.com/xh-polaris/psych-model/biz/infrastructure/mapper/unit"
+	untmapper "github.com/xh-polaris/psych-model/biz/infrastructure/mapper/model"
 	"github.com/xh-polaris/psych-model/biz/infrastructure/util/result"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )

@@ -6,7 +6,7 @@ import (
 	"github.com/xh-polaris/psych-model/biz/application/service"
 	"github.com/xh-polaris/psych-model/biz/infrastructure/config"
 	"github.com/xh-polaris/psych-model/biz/infrastructure/mapper/app"
-	"github.com/xh-polaris/psych-model/biz/infrastructure/mapper/unit"
+	"github.com/xh-polaris/psych-model/biz/infrastructure/mapper/model"
 )
 
 var ApplicationSet = wire.NewSet(
@@ -15,7 +15,7 @@ var ApplicationSet = wire.NewSet(
 )
 
 var MapperSet = wire.NewSet(
-	unit.NewMongoMapper,
+	model.NewMongoMapper,
 	app.NewMongoMapper,
 )
 

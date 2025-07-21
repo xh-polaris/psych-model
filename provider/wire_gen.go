@@ -11,7 +11,7 @@ import (
 	"github.com/xh-polaris/psych-model/biz/adaptor/controller"
 	"github.com/xh-polaris/psych-model/biz/application/service"
 	"github.com/xh-polaris/psych-model/biz/infrastructure/config"
-	"github.com/xh-polaris/psych-model/biz/infrastructure/mapper/unit"
+	"github.com/xh-polaris/psych-model/biz/infrastructure/mapper/model"
 )
 
 // Injectors from wire.go:
@@ -21,7 +21,7 @@ func NewProvider() (*adaptor.Server, error) {
 	if err != nil {
 		return nil, err
 	}
-	mongoMapper := unit.NewMongoMapper(configConfig)
+	mongoMapper := model.NewMongoMapper(configConfig)
 	unitAppConfigService := &service.UnitAppConfigService{
 		UnitAppConfigMapper: mongoMapper,
 	}

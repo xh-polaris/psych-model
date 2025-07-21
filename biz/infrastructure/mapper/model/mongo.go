@@ -1,4 +1,4 @@
-package unit
+package model
 
 import (
 	"context"
@@ -46,6 +46,24 @@ func (m *MongoMapper) InsertWithEcho(ctx context.Context, appConfig *UnitAppConf
 func (m *MongoMapper) Update(ctx context.Context, appConfig *UnitAppConfig) error {
 	appConfig.UpdateTime = time.Now()
 	_, err := m.conn.UpdateByIDNoCache(ctx, appConfig.ID, bson.M{"$set": appConfig})
+	return err
+}
+
+func (m *MongoMapper) UpdateAppid(ctx context.Context, id string, types int32, appid string) error {
+	oid, err := primitive.ObjectIDFromHex(id)
+	var set bson.M
+	switch types {
+	case consts.ChatApp:
+		set = bson.M{consts.Chat: appid}
+	case consts.TtsApp:
+		set = bson.M{consts.Tts: appid}
+	case consts.AsrApp:
+		set = bson.M{consts.Asr: appid}
+	case consts.ReportApp:
+		set = bson.M{consts.Report: appid}
+	}
+	set[consts.UpdateTime] = time.Now()
+	_, err = m.conn.UpdateByIDNoCache(ctx, oid, bson.M{"$set": set})
 	return err
 }
 

@@ -10,6 +10,11 @@ const (
 	DeleteTime = "delete_time"
 	Form       = "form"
 	NotEqual   = "$ne"
+	Chat       = "chat"
+	Tts        = "tts"
+	Asr        = "asr"
+	Report     = "report"
+	Type       = "type"
 )
 
 // status
@@ -20,9 +25,8 @@ const (
 
 // app type
 const (
-	All    = 0
-	Chat   = 1
-	Tts    = 2
-	Asr    = 3
-	Repost = 4
+	ChatApp   = 0
+	TtsApp    = 1
+	AsrApp    = 2
+	ReportApp = 3
 )
