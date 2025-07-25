@@ -23,14 +23,14 @@ var UnitAppConfigControllerSet = wire.NewSet(
 	wire.Bind(new(IUnitAppConfigController), new(*UnitAppConfigController)),
 )
 
-func (u UnitAppConfigController) UnitAppConfigCreate(ctx context.Context, req *m.UnitAppConfigCreateReq) (res *m.UnitAppConfigCreateResp, err error) {
-	return u.UnitAppConfigCreate(ctx, req)
+func (u *UnitAppConfigController) UnitAppConfigCreate(ctx context.Context, req *m.UnitAppConfigCreateReq) (res *m.UnitAppConfigCreateResp, err error) {
+	return u.UnitAppConfigService.UnitAppConfigCreate(ctx, req)
 }
 
-func (u UnitAppConfigController) UnitAppConfigUpdate(ctx context.Context, req *m.UnitAppConfigUpdateReq) (res *basic.Response, err error) {
-	return u.UnitAppConfigUpdate(ctx, req)
+func (u *UnitAppConfigController) UnitAppConfigUpdate(ctx context.Context, req *m.UnitAppConfigUpdateReq) (res *basic.Response, err error) {
+	return u.UnitAppConfigService.UnitAppConfigUpdate(ctx, req)
 }
 
-func (u UnitAppConfigController) UnitAppConfigGet(ctx context.Context, req *m.UnitAppConfigGetReq) (res *m.UnitAppConfigGetResp, err error) {
-	return u.UnitAppConfigGet(ctx, req)
+func (u *UnitAppConfigController) UnitAppConfigGet(ctx context.Context, req *m.UnitAppConfigGetReq) (res *m.UnitAppConfigGetResp, err error) {
+	return u.UnitAppConfigService.UnitAppConfigGet(ctx, req)
 }

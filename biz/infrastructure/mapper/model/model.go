@@ -8,6 +8,8 @@ import (
 type UnitAppConfig struct {
 	ID         primitive.ObjectID `bson:"_id,omitempty" json:"id,omitempty"`
 	UnitId     string             `bson:"unit_id,omitempty" json:"unit_id,omitempty"`
+	Name       string             `bson:"name,omitempty" json:"name,omitempty"`
+	Video      string             `bson:"video,omitempty" json:"video,omitempty"`
 	Chat       string             `bson:"chat,omitempty" json:"chat,omitempty"`
 	Asr        string             `bson:"asr,omitempty" json:"asr,omitempty"`
 	Tts        string             `bson:"tts,omitempty" json:"tts,omitempty"`

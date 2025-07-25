@@ -16,7 +16,8 @@ import (
 type IAppService interface {
 	AppCreate(ctx context.Context, req *m.AppCreateReq) (res *m.AppCreateResp, err error)
 	AppUpdate(ctx context.Context, req *m.AppUpdateReq) (res *basic.Response, err error)
-	AppGet(ctx context.Context, req *m.AppGetReq) (res *m.AppGetResp, err error)
+	AppGetByUnitIdReq(ctx context.Context, req *m.AppGetByUnitIdReq) (res *m.AppGetByUnitIdResp, err error)
+	AppGetPagesReq(ctx context.Context, req *m.AppGetPagesReq) (res *m.AppGetPagesResp, err error)
 	AppDelete(ctx context.Context, req *m.AppDeleteReq) (res *basic.Response, err error)
 }
 
@@ -202,68 +203,71 @@ func (a *AppService) AppUpdate(ctx context.Context, req *m.AppUpdateReq) (res *b
 	return result.ResponseOk(), nil
 }
 
-func (a *AppService) AppGet(ctx context.Context, req *m.AppGetReq) (res *m.AppGetResp, err error) {
+func (a *AppService) AppGetByUnitIdReq(ctx context.Context, req *m.AppGetByUnitIdReq) (res *m.AppGetByUnitIdResp, err error) {
 	unitId := req.UnitAppConfig.UnitId
-	app, err := a.AppMapper.FindByUnitId(ctx, unitId, req.Type)
+	apps, err := a.AppMapper.FindByUnitId(ctx, unitId)
 	if err != nil {
 		return nil, err
 	}
-	base := app.GetBase()
-	resApp := &m.App{
-		Id:          base.ID.Hex(),
-		Name:        base.Name,
-		Description: base.Description,
-		Lang:        base.Lang,
-		Platform:    base.Platform,
-		Url:         base.Url,
-		Appid:       base.Appid,
-		Auth:        base.Auth,
-		Stream:      base.Stream,
-		Level:       base.Level,
-		Status:      base.Status,
-		CreateTime:  base.CreateTime.Unix(),
-		ExpireTime:  base.ExpireTime,
-		UpdateTime:  base.UpdateTime.Unix(),
-	}
-	switch detail := app.(type) {
-	case *appmapper.ChatApp:
-		res.ChatApp = &m.ChatApp{
-			App: resApp,
+
+	for _, app := range apps {
+		base := app.GetBase()
+		resApp := &m.App{
+			Id:          base.ID.Hex(),
+			Name:        base.Name,
+			Description: base.Description,
+			Lang:        base.Lang,
+			Platform:    base.Platform,
+			Url:         base.Url,
+			Appid:       base.Appid,
+			Auth:        base.Auth,
+			Stream:      base.Stream,
+			Level:       base.Level,
+			Status:      base.Status,
+			CreateTime:  base.CreateTime.Unix(),
+			ExpireTime:  base.ExpireTime,
+			UpdateTime:  base.UpdateTime.Unix(),
 		}
-	case *appmapper.TtsApp:
-		res.TtsApp = &m.TtsApp{
-			App:        resApp,
-			Namespace:  detail.Namespace,
-			Speaker:    detail.Speaker,
-			ResourceId: detail.ResourceId,
-			AudioParams: &m.TtsApp_AudioParam{
-				Format:       detail.AudioParam.Format,
-				Rate:         detail.AudioParam.Rate,
-				Bit:          detail.AudioParam.Bit,
-				SpeechRate:   detail.AudioParam.SpeechRate,
-				LoudnessRate: detail.AudioParam.LoudnessRate,
-				Lang:         detail.AudioParam.Lang,
-			},
+		switch detail := app.(type) {
+		case *appmapper.ChatApp:
+			res.ChatApp = &m.ChatApp{
+				App: resApp,
+			}
+		case *appmapper.TtsApp:
+			res.TtsApp = &m.TtsApp{
+				App:        resApp,
+				Namespace:  detail.Namespace,
+				Speaker:    detail.Speaker,
+				ResourceId: detail.ResourceId,
+				AudioParams: &m.TtsApp_AudioParam{
+					Format:       detail.AudioParam.Format,
+					Rate:         detail.AudioParam.Rate,
+					Bit:          detail.AudioParam.Bit,
+					SpeechRate:   detail.AudioParam.SpeechRate,
+					LoudnessRate: detail.AudioParam.LoudnessRate,
+					Lang:         detail.AudioParam.Lang,
+				},
+			}
+		case *appmapper.AsrApp:
+			res.AsrApp = &m.AsrApp{
+				App:        resApp,
+				Format:     detail.Format,
+				Codec:      detail.Codec,
+				Rate:       detail.Rate,
+				Bits:       detail.Bits,
+				Channels:   detail.Channels,
+				ModelName:  detail.ModelName,
+				EnablePunc: detail.EnablePunc,
+				EnableDdc:  detail.EnableDdc,
+				ResultType: detail.ResultType,
+			}
+		case *appmapper.ReportApp:
+			res.ReportApp = &m.ReportApp{
+				App: resApp,
+			}
+		default:
+			return nil, consts.ErrInvalidParams
 		}
-	case *appmapper.AsrApp:
-		res.AsrApp = &m.AsrApp{
-			App:        resApp,
-			Format:     detail.Format,
-			Codec:      detail.Codec,
-			Rate:       detail.Rate,
-			Bits:       detail.Bits,
-			Channels:   detail.Channels,
-			ModelName:  detail.ModelName,
-			EnablePunc: detail.EnablePunc,
-			EnableDdc:  detail.EnableDdc,
-			ResultType: detail.ResultType,
-		}
-	case *appmapper.ReportApp:
-		res.ReportApp = &m.ReportApp{
-			App: resApp,
-		}
-	default:
-		return nil, consts.ErrInvalidParams
 	}
 	return res, nil
 }
@@ -283,6 +287,26 @@ func (a *AppService) AppDelete(ctx context.Context, req *m.AppDeleteReq) (res *b
 	return result.ResponseOk(), nil
 }
 
+func (a *AppService) AppGetPagesReq(ctx context.Context, req *m.AppGetPagesReq) (*m.AppGetPagesResp, error) {
+	p := req.GetPaginationOptions()
+	data, total, err := a.AppMapper.FindPagination(ctx, p, req.Type)
+	if err != nil {
+		return nil, err
+	}
+
+	var apps []*m.AppData
+	for _, app := range data {
+		apps = append(apps, WrapAppData(app))
+	}
+
+	return &m.AppGetPagesResp{
+		// TODO resp int32 -> int64
+		Total:    int32(total),
+		Page:     int32(*p.Page),
+		PageSize: int32(*p.Limit),
+	}, nil
+}
+
 func (a *AppService) createChat(ctx context.Context, detail *m.AppCreateReq_ChatApp, model *m.UnitAppConfig) (*m.AppCreateResp_ChatApp, error) {
 	now := time.Now()
 
@@ -300,7 +324,7 @@ func (a *AppService) createChat(ctx context.Context, detail *m.AppCreateReq_Chat
 			Auth:        app.Auth,
 			Stream:      app.Stream,
 			Level:       app.Level,
-			Status:      app.Status,
+			Status:      consts.Active,
 			ExpireTime:  app.ExpireTime,
 			CreateTime:  now,
 			UpdateTime:  now,
@@ -344,7 +368,7 @@ func (a *AppService) createTts(ctx context.Context, detail *m.AppCreateReq_TtsAp
 			Auth:        app.Auth,
 			Stream:      app.Stream,
 			Level:       app.Level,
-			Status:      app.Status,
+			Status:      consts.Active,
 			ExpireTime:  app.ExpireTime,
 			CreateTime:  now,
 			UpdateTime:  now,
@@ -410,7 +434,7 @@ func (a *AppService) createAsr(ctx context.Context, detail *m.AppCreateReq_AsrAp
 			Auth:        app.Auth,
 			Stream:      app.Stream,
 			Level:       app.Level,
-			Status:      app.Status,
+			Status:      consts.Active,
 			ExpireTime:  app.ExpireTime,
 			CreateTime:  now,
 			UpdateTime:  now,
@@ -472,7 +496,7 @@ func (a *AppService) createReport(ctx context.Context, detail *m.AppCreateReq_Re
 			Auth:        app.Auth,
 			Stream:      app.Stream,
 			Level:       app.Level,
-			Status:      app.Status,
+			Status:      consts.Active,
 			ExpireTime:  app.ExpireTime,
 			CreateTime:  now,
 			UpdateTime:  now,
@@ -497,4 +521,72 @@ func (a *AppService) createReport(ctx context.Context, detail *m.AppCreateReq_Re
 			App: app,
 		},
 	}, nil
+}
+
+func WrapAppData(app appmapper.AppInterface) *m.AppData {
+	base := app.GetBase()
+	appBase := &m.App{
+		Id:          base.ID.Hex(),
+		Name:        base.Name,
+		Description: base.Description,
+		Lang:        base.Lang,
+		Platform:    base.Platform,
+		Url:         base.Url,
+		Appid:       base.Appid,
+		Auth:        base.Auth,
+		Stream:      base.Stream,
+		Level:       base.Level,
+		Status:      base.Status,
+		CreateTime:  base.CreateTime.Unix(),
+		ExpireTime:  base.ExpireTime,
+		UpdateTime:  base.UpdateTime.Unix(),
+	}
+	switch a := app.(type) {
+	case *appmapper.ChatApp:
+		return &m.AppData{
+			App: &m.AppData_ChatApp{
+				ChatApp: &m.ChatApp{
+					App: appBase,
+				},
+			},
+		}
+	case *appmapper.TtsApp:
+		return &m.AppData{
+			App: &m.AppData_TtsApp{TtsApp: &m.TtsApp{
+				App:        appBase,
+				Namespace:  a.Namespace,
+				Speaker:    a.Speaker,
+				ResourceId: a.ResourceId,
+				AudioParams: &m.TtsApp_AudioParam{
+					Format:       a.AudioParam.Format,
+					Rate:         a.AudioParam.Rate,
+					Bit:          a.AudioParam.Bit,
+					SpeechRate:   a.AudioParam.SpeechRate,
+					LoudnessRate: a.AudioParam.LoudnessRate,
+					Lang:         a.AudioParam.Lang,
+				},
+			}},
+		}
+	case *appmapper.AsrApp:
+		return &m.AppData{
+			App: &m.AppData_AsrApp{AsrApp: &m.AsrApp{
+				App:        appBase,
+				Format:     a.Format,
+				Codec:      a.Codec,
+				Rate:       a.Rate,
+				Bits:       a.Bits,
+				Channels:   a.Channels,
+				ModelName:  a.ModelName,
+				EnablePunc: a.EnablePunc,
+				EnableDdc:  a.EnableDdc,
+				ResultType: a.ResultType,
+			}},
+		}
+	case *appmapper.ReportApp:
+		return &m.AppData{
+			App: &m.AppData_ReportApp{ReportApp: &m.ReportApp{App: appBase}},
+		}
+	default:
+		return nil // 或者 panic("unsupported app type")
+	}
 }

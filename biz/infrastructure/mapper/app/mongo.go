@@ -3,11 +3,14 @@ package app
 import (
 	"context"
 	"errors"
+	"github.com/xh-polaris/psych-idl/kitex_gen/basic"
 	"github.com/xh-polaris/psych-model/biz/infrastructure/config"
 	"github.com/xh-polaris/psych-model/biz/infrastructure/consts"
+	util "github.com/xh-polaris/psych-model/biz/infrastructure/util/page"
 	"github.com/zeromicro/go-zero/core/stores/monc"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo/options"
 	"time"
 )
 
@@ -46,11 +49,10 @@ func (m *MongoMapper) Update(ctx context.Context, app AppInterface) error {
 	return err
 }
 
-func (m *MongoMapper) FindByUnitId(ctx context.Context, id string, t int32) (AppInterface, error) {
-	var raw bson.M
-	err := m.conn.FindOneNoCache(ctx, &raw, bson.M{
-		consts.UnitId: id,
-		consts.Type:   t,
+func (m *MongoMapper) FindByUnitId(ctx context.Context, unitId string) ([]AppInterface, error) {
+	var apps []AppInterface
+	err := m.conn.Find(ctx, apps, bson.M{
+		consts.UnitId: unitId,
 	})
 	if err != nil {
 		if errors.Is(err, monc.ErrNotFound) {
@@ -59,35 +61,45 @@ func (m *MongoMapper) FindByUnitId(ctx context.Context, id string, t int32) (App
 		return nil, err
 	}
 
-	bsonBytes, _ := bson.Marshal(raw)
-	switch t {
-	case consts.ChatApp:
-		var app ChatApp
-		if err := bson.Unmarshal(bsonBytes, &app); err != nil {
-			return nil, err
+	return apps, nil
+}
+
+func (m *MongoMapper) FindPagination(ctx context.Context, p *basic.PaginationOptions, types int32) (apps []AppInterface, total int64, err error) {
+	skip, limit := util.ParsePageOpt(p)
+	apps = make([]AppInterface, 0, limit)
+	if types == consts.All {
+		err = m.conn.Find(ctx, &apps,
+			bson.M{}, &options.FindOptions{
+				Skip:  &skip,
+				Limit: &limit,
+				Sort:  bson.M{consts.CreateTime: -1},
+			})
+		if err != nil {
+			return nil, 0, err
 		}
-		return &app, nil
-	case consts.TtsApp:
-		var app TtsApp
-		if err := bson.Unmarshal(bsonBytes, &app); err != nil {
-			return nil, err
+		total, err = m.conn.CountDocuments(ctx, bson.M{})
+	} else {
+		err = m.conn.Find(ctx, &apps,
+			bson.M{
+				consts.Type: types,
+			}, &options.FindOptions{
+				Skip:  &skip,
+				Limit: &limit,
+				Sort:  bson.M{consts.CreateTime: -1},
+			})
+		if err != nil {
+			return nil, 0, err
 		}
-		return &app, nil
-	case consts.AsrApp:
-		var app AsrApp
-		if err := bson.Unmarshal(bsonBytes, &app); err != nil {
-			return nil, err
-		}
-		return &app, nil
-	case consts.ReportApp:
-		var app ReportApp
-		if err := bson.Unmarshal(bsonBytes, &app); err != nil {
-			return nil, err
-		}
-		return &app, nil
-	default:
-		return nil, consts.ErrInvalidParams
+		total, err = m.conn.CountDocuments(ctx, bson.M{
+			consts.Type: types,
+		})
 	}
+
+	if err != nil {
+		return nil, 0, err
+	}
+
+	return apps, total, nil
 }
 
 func (m *MongoMapper) Delete(ctx context.Context, unitId string, t int32) error {

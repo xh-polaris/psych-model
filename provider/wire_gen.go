@@ -11,6 +11,7 @@ import (
 	"github.com/xh-polaris/psych-model/biz/adaptor/controller"
 	"github.com/xh-polaris/psych-model/biz/application/service"
 	"github.com/xh-polaris/psych-model/biz/infrastructure/config"
+	"github.com/xh-polaris/psych-model/biz/infrastructure/mapper/app"
 	"github.com/xh-polaris/psych-model/biz/infrastructure/mapper/model"
 )
 
@@ -28,8 +29,13 @@ func NewProvider() (*adaptor.Server, error) {
 	unitAppConfigController := &controller.UnitAppConfigController{
 		UnitAppConfigService: unitAppConfigService,
 	}
+	appMongoMapper := app.NewMongoMapper(configConfig)
+	appService := &service.AppService{
+		AppMapper:   appMongoMapper,
+		ModelMapper: mongoMapper,
+	}
 	appController := &controller.AppController{
-		UnitAppConfigService: unitAppConfigService,
+		AppService: appService,
 	}
 	server := &adaptor.Server{
 		IUnitAppConfigController: unitAppConfigController,

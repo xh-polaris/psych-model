@@ -29,6 +29,10 @@ func NewErrno(code codes.Code, err error) *Errno {
 	}
 }
 
+var (
+	ErrExistConfig = NewErrno(codes.Unavailable, errors.New("该单位已经生成配置"))
+)
+
 // ErrInvalidParams 调用时错误
 var (
 	ErrInvalidParams = NewErrno(codes.InvalidArgument, errors.New("参数错误"))
