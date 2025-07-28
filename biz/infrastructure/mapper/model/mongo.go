@@ -67,10 +67,28 @@ func (m *MongoMapper) UpdateAppid(ctx context.Context, id string, types int32, a
 	return err
 }
 
-func (m *MongoMapper) FindOneByUnitId(ctx context.Context, id string) (*UnitAppConfig, error) {
+func (m *MongoMapper) FindOneByUnitId(ctx context.Context, unitId string) (*UnitAppConfig, error) {
 	var appConfig UnitAppConfig
 	err := m.conn.FindOneNoCache(ctx, &appConfig, bson.M{
-		consts.UnitId: id,
+		consts.UnitId: unitId,
+	})
+	if err != nil {
+		if errors.Is(err, monc.ErrNotFound) {
+			return nil, consts.ErrNotFound
+		}
+		return nil, err
+	}
+	return &appConfig, nil
+}
+
+func (m *MongoMapper) FindOneById(ctx context.Context, id string) (*UnitAppConfig, error) {
+	var appConfig UnitAppConfig
+	oid, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return nil, err
+	}
+	err = m.conn.FindOneNoCache(ctx, &appConfig, bson.M{
+		consts.ID: oid,
 	})
 	if err != nil {
 		if errors.Is(err, monc.ErrNotFound) {

@@ -11,7 +11,8 @@ import (
 type IUnitAppConfigController interface {
 	UnitAppConfigCreate(ctx context.Context, req *m.UnitAppConfigCreateReq) (res *m.UnitAppConfigCreateResp, err error)
 	UnitAppConfigUpdate(ctx context.Context, req *m.UnitAppConfigUpdateReq) (res *basic.Response, err error)
-	UnitAppConfigGet(ctx context.Context, req *m.UnitAppConfigGetReq) (res *m.UnitAppConfigGetResp, err error)
+	UnitAppConfigGetById(ctx context.Context, req *m.UnitAppConfigGetByIdReq) (res *m.UnitAppConfigGetByIdResp, err error)
+	UnitAppConfigGetByUnitId(ctx context.Context, req *m.UnitAppConfigGetByUnitIdReq) (res *m.UnitAppConfigGetByUnitIdResp, err error)
 }
 
 type UnitAppConfigController struct {
@@ -31,6 +32,10 @@ func (u *UnitAppConfigController) UnitAppConfigUpdate(ctx context.Context, req *
 	return u.UnitAppConfigService.UnitAppConfigUpdate(ctx, req)
 }
 
-func (u *UnitAppConfigController) UnitAppConfigGet(ctx context.Context, req *m.UnitAppConfigGetReq) (res *m.UnitAppConfigGetResp, err error) {
-	return u.UnitAppConfigService.UnitAppConfigGet(ctx, req)
+func (u *UnitAppConfigController) UnitAppConfigGetById(ctx context.Context, req *m.UnitAppConfigGetByIdReq) (res *m.UnitAppConfigGetByIdResp, err error) {
+	return u.UnitAppConfigService.UnitAppConfigGetById(ctx, req)
+}
+
+func (u *UnitAppConfigController) UnitAppConfigGetByUnitId(ctx context.Context, req *m.UnitAppConfigGetByUnitIdReq) (res *m.UnitAppConfigGetByUnitIdResp, err error) {
+	return u.UnitAppConfigService.UnitAppConfigGetByUnitId(ctx, req)
 }
