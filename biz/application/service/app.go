@@ -10,14 +10,14 @@ import (
 	mdlmapper "github.com/xh-polaris/psych-model/biz/infrastructure/mapper/model"
 	"github.com/xh-polaris/psych-model/biz/infrastructure/util/result"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"time"
 )
 
 type IAppService interface {
 	AppCreate(ctx context.Context, req *m.AppCreateReq) (res *m.AppCreateResp, err error)
 	AppUpdate(ctx context.Context, req *m.AppUpdateReq) (res *basic.Response, err error)
-	AppGetByUnitIdReq(ctx context.Context, req *m.AppGetByUnitIdReq) (res *m.AppGetByUnitIdResp, err error)
-	AppGetPagesReq(ctx context.Context, req *m.AppGetPagesReq) (res *m.AppGetPagesResp, err error)
+	AppGetByConfigId(ctx context.Context, req *m.AppGetByConfigIdReq) (res *m.AppGetByConfigIdResp, err error)
+	AppGetById(ctx context.Context, req *m.AppGetByIdReq) (res *m.AppGetByIdResp, err error)
+	AppList(ctx context.Context, req *m.AppListReq) (res *m.AppListResp, err error)
 	AppDelete(ctx context.Context, req *m.AppDeleteReq) (res *basic.Response, err error)
 }
 
@@ -32,195 +32,138 @@ var AppServiceSet = wire.NewSet(
 )
 
 func (a *AppService) AppCreate(ctx context.Context, req *m.AppCreateReq) (res *m.AppCreateResp, err error) {
-	switch detail := req.AppDetail.(type) {
-	case *m.AppCreateReq_ChatApp:
-		// detail 是 *AppCreateReq_ChatApp 类型
-		res, err := a.createChat(ctx, detail, req.UnitAppConfig)
-		if err != nil {
-			return nil, err
-		}
-		return &m.AppCreateResp{
-			AppDetail: res,
-		}, err
-
-	case *m.AppCreateReq_TtsApp:
-		// detail 是 *AppCreateReq_TtsApp 类型
-		res, err := a.createTts(ctx, detail, req.UnitAppConfig)
-		if err != nil {
-			return nil, err
-		}
-		return &m.AppCreateResp{
-			AppDetail: res,
-		}, err
-
-	case *m.AppCreateReq_AsrApp:
-		// detail 是 *AppCreateReq_AsrApp 类型
-		res, err := a.createAsr(ctx, detail, req.UnitAppConfig)
-		if err != nil {
-			return nil, err
-		}
-		return &m.AppCreateResp{
-			AppDetail: res,
-		}, err
-
-	case *m.AppCreateReq_ReportApp:
-		// detail 是 *AppCreateReq_ReportApp 类型
-		res, err := a.createReport(ctx, detail, req.UnitAppConfig)
-		if err != nil {
-			return nil, err
-		}
-		return &m.AppCreateResp{
-			AppDetail: res,
-		}, err
+	var app *m.AppData
+	switch appData := req.App.App.(type) {
+	case *m.AppData_ChatApp:
+		app, err = a.appCreate(ctx, &m.AppData{App: appData}, req.ConfigId, consts.ChatApp)
+	case *m.AppData_TtsApp:
+		app, err = a.appCreate(ctx, &m.AppData{App: appData}, req.ConfigId, consts.TtsApp)
+	case *m.AppData_AsrApp:
+		app, err = a.appCreate(ctx, &m.AppData{App: appData}, req.ConfigId, consts.AsrApp)
+	case *m.AppData_ReportApp:
+		app, err = a.appCreate(ctx, &m.AppData{App: appData}, req.ConfigId, consts.ReportApp)
 	default:
 		return nil, consts.ErrInvalidParams
 	}
+	if err != nil {
+		return nil, err
+	}
+	return &m.AppCreateResp{App: app}, nil
+}
+
+func (a *AppService) appCreate(ctx context.Context, app *m.AppData, configId string, types int32) (res *m.AppData, err error) {
+	appWrap := appGen2DB(app)
+	appWrap.ConfigId = configId
+
+	// 插入app db
+	id, err := a.AppMapper.InsertWithEcho(ctx, appWrap)
+	if err != nil {
+		return nil, err
+	}
+
+	// 更新model db
+	if err = a.ModelMapper.UpdateAppId(ctx, configId, types, id); err != nil {
+		return nil, err
+	}
+
+	hex, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return nil, err
+	}
+	appWrap.ID = hex
+	return appDB2Gen(appWrap, true), nil
 }
 
 func (a *AppService) AppUpdate(ctx context.Context, req *m.AppUpdateReq) (res *basic.Response, err error) {
-	switch detail := req.AppDetail.(type) {
-	case *m.AppUpdateReq_ChatApp:
-		// detail 是 *AppCreateReq_ChatApp 类型
-		app := detail.ChatApp.App
-		oid, err := primitive.ObjectIDFromHex(app.Id)
-		if err != nil {
-			return nil, err
+	switch appData := req.App.App.(type) {
+	case *m.AppData_ChatApp, *m.AppData_TtsApp, *m.AppData_AsrApp, *m.AppData_ReportApp:
+		appWrap := appGen2DB(&m.AppData{App: appData})
+		if appWrap == nil {
+			return nil, consts.ErrInvalidParams
 		}
-		err = a.AppMapper.Update(ctx, &appmapper.ChatApp{
-			App: appmapper.AppBase{
-				ID:          oid,
-				Name:        app.Name,
-				Description: app.Description,
-				Lang:        app.Lang,
-				Platform:    app.Platform,
-				Url:         app.Url,
-				Appid:       app.Appid,
-				Auth:        app.Auth,
-				Stream:      app.Stream,
-				Level:       app.Level,
-				Status:      app.Status,
-				ExpireTime:  app.ExpireTime,
-			},
-		})
-
-	case *m.AppUpdateReq_TtsApp:
-		// detail 是 *AppCreateReq_TtsApp 类型
-		tts := detail.TtsApp
-		app := tts.App
-		oid, err := primitive.ObjectIDFromHex(app.Id)
-		if err != nil {
-			return nil, err
-		}
-		err = a.AppMapper.Update(ctx, &appmapper.TtsApp{
-			App: appmapper.AppBase{
-				ID:          oid,
-				Name:        app.Name,
-				Description: app.Description,
-				Lang:        app.Lang,
-				Platform:    app.Platform,
-				Url:         app.Url,
-				Appid:       app.Appid,
-				Auth:        app.Auth,
-				Stream:      app.Stream,
-				Level:       app.Level,
-				Status:      app.Status,
-				ExpireTime:  app.ExpireTime,
-			},
-			Namespace:  tts.Namespace,
-			Speaker:    tts.Speaker,
-			ResourceId: tts.ResourceId,
-			AudioParam: appmapper.AudioParam{
-				Format:       tts.AudioParams.Format,
-				Rate:         tts.AudioParams.Rate,
-				Bit:          tts.AudioParams.Bit,
-				SpeechRate:   tts.AudioParams.SpeechRate,
-				LoudnessRate: tts.AudioParams.LoudnessRate,
-				Lang:         tts.AudioParams.Lang,
-			},
-		})
-
-	case *m.AppUpdateReq_AsrApp:
-		// detail 是 *AppCreateReq_AsrApp 类型
-		asr := detail.AsrApp
-		app := asr.App
-		oid, err := primitive.ObjectIDFromHex(app.Id)
-		if err != nil {
-			return nil, err
-		}
-		err = a.AppMapper.Update(ctx, &appmapper.AsrApp{
-			App: appmapper.AppBase{
-				ID:          oid,
-				Name:        app.Name,
-				Description: app.Description,
-				Lang:        app.Lang,
-				Platform:    app.Platform,
-				Url:         app.Url,
-				Appid:       app.Appid,
-				Auth:        app.Auth,
-				Stream:      app.Stream,
-				Level:       app.Level,
-				Status:      app.Status,
-				ExpireTime:  app.ExpireTime,
-			},
-			Format:     asr.Format,
-			Codec:      asr.Codec,
-			Rate:       asr.Rate,
-			Bits:       asr.Bits,
-			Channels:   asr.Channels,
-			ModelName:  asr.ModelName,
-			EnablePunc: asr.EnablePunc,
-			EnableDdc:  asr.EnableDdc,
-			ResultType: asr.ResultType,
-		})
-
-	case *m.AppUpdateReq_ReportApp:
-		// detail 是 *AppCreateReq_ReportApp 类型
-		report := detail.ReportApp
-		app := report.App
-		oid, err := primitive.ObjectIDFromHex(app.Id)
-		if err != nil {
-			return nil, err
-		}
-		err = a.AppMapper.Update(ctx, &appmapper.ReportApp{
-			App: appmapper.AppBase{
-				ID:          oid,
-				Name:        app.Name,
-				Description: app.Description,
-				Lang:        app.Lang,
-				Platform:    app.Platform,
-				Url:         app.Url,
-				Appid:       app.Appid,
-				Auth:        app.Auth,
-				Stream:      app.Stream,
-				Level:       app.Level,
-				Status:      app.Status,
-				ExpireTime:  app.ExpireTime,
-			},
-		})
+		err = a.AppMapper.Update(ctx, appWrap)
 	default:
 		return nil, consts.ErrInvalidParams
 	}
 	return result.ResponseOk(), nil
 }
 
-func (a *AppService) AppGetByUnitIdReq(ctx context.Context, req *m.AppGetByUnitIdReq) (res *m.AppGetByUnitIdResp, err error) {
-	unitId := req.UnitAppConfig.UnitId
-	apps, err := a.AppMapper.FindByUnitId(ctx, unitId)
+func (a *AppService) AppGetByConfigId(ctx context.Context, req *m.AppGetByConfigIdReq) (res *m.AppGetByConfigIdResp, err error) {
+	configId := req.ConfigId
+	// 查询 app
+	apps, err := a.AppMapper.FindBatchByConfigId(ctx, configId)
 	if err != nil {
 		return nil, err
 	}
 
-	for _, app := range apps {
-		base := app.GetBase()
-		resApp := &m.App{
-			Id:          base.ID.Hex(),
+	resApps := make([]*m.AppData, len(apps))
+	for idx, app := range apps {
+		gen := appDB2Gen(app, true)
+		resApps[idx] = gen
+	}
+
+	return &m.AppGetByConfigIdResp{
+		Apps: resApps,
+	}, nil
+}
+
+func (a *AppService) AppGetById(ctx context.Context, req *m.AppGetByIdReq) (res *m.AppGetByIdResp, err error) {
+	// 查询 app
+	app, err := a.AppMapper.FindOneById(ctx, req.Id)
+	if err != nil {
+		return nil, err
+	}
+	return &m.AppGetByIdResp{App: appDB2Gen(app, true)}, nil
+}
+
+func (a *AppService) AppDelete(ctx context.Context, req *m.AppDeleteReq) (res *basic.Response, err error) {
+	// 删除unit_model对应字段，并获取appId
+	configId := req.ConfigId
+	appId, err := a.ModelMapper.DeleteAppId(ctx, configId, req.Type)
+	if err != nil {
+		return nil, err
+	}
+	// 删除app
+	if err = a.AppMapper.DeleteOneById(ctx, appId); err != nil {
+		return nil, err
+	}
+
+	return result.ResponseOk(), nil
+}
+
+func (a *AppService) AppList(ctx context.Context, req *m.AppListReq) (res *m.AppListResp, err error) {
+	p := req.GetPaginationOptions()
+	data, total, err := a.AppMapper.List(ctx, p, req.Type)
+	if err != nil {
+		return nil, err
+	}
+
+	var apps []*m.AppData
+	for _, app := range data {
+		apps = append(apps, appDB2Gen(&app, true))
+	}
+
+	return &m.AppListResp{
+		Apps:     apps,
+		Total:    total,
+		Page:     *p.Page,
+		PageSize: *p.Limit,
+	}, nil
+}
+
+func appDB2Gen(app *appmapper.AppWrap, admin bool) *m.AppData {
+	base := app.App.GetBase()
+	var appBase *m.App
+	if admin {
+		appBase = &m.App{
+			Id:          app.ID.Hex(),
 			Name:        base.Name,
 			Description: base.Description,
 			Lang:        base.Lang,
 			Platform:    base.Platform,
 			Url:         base.Url,
-			Appid:       base.Appid,
-			Auth:        base.Auth,
+			AppId:       base.AppId,
+			AccessKey:   base.AccessKey,
 			Stream:      base.Stream,
 			Level:       base.Level,
 			Status:      base.Status,
@@ -228,330 +171,37 @@ func (a *AppService) AppGetByUnitIdReq(ctx context.Context, req *m.AppGetByUnitI
 			ExpireTime:  base.ExpireTime,
 			UpdateTime:  base.UpdateTime.Unix(),
 		}
-		switch detail := app.(type) {
-		case *appmapper.ChatApp:
-			res.ChatApp = &m.ChatApp{
-				App: resApp,
-			}
-		case *appmapper.TtsApp:
-			res.TtsApp = &m.TtsApp{
-				App:        resApp,
-				Namespace:  detail.Namespace,
-				Speaker:    detail.Speaker,
-				ResourceId: detail.ResourceId,
-				AudioParams: &m.TtsApp_AudioParam{
-					Format:       detail.AudioParam.Format,
-					Rate:         detail.AudioParam.Rate,
-					Bit:          detail.AudioParam.Bit,
-					SpeechRate:   detail.AudioParam.SpeechRate,
-					LoudnessRate: detail.AudioParam.LoudnessRate,
-					Lang:         detail.AudioParam.Lang,
-				},
-			}
-		case *appmapper.AsrApp:
-			res.AsrApp = &m.AsrApp{
-				App:        resApp,
-				Format:     detail.Format,
-				Codec:      detail.Codec,
-				Rate:       detail.Rate,
-				Bits:       detail.Bits,
-				Channels:   detail.Channels,
-				ModelName:  detail.ModelName,
-				EnablePunc: detail.EnablePunc,
-				EnableDdc:  detail.EnableDdc,
-				ResultType: detail.ResultType,
-			}
-		case *appmapper.ReportApp:
-			res.ReportApp = &m.ReportApp{
-				App: resApp,
-			}
-		default:
-			return nil, consts.ErrInvalidParams
+	} else {
+		appBase = &m.App{
+			Id:          app.ID.Hex(),
+			Name:        base.Name,
+			Description: base.Description,
+			Lang:        base.Lang,
+			Platform:    base.Platform,
+			Url:         base.Url,
+			Stream:      base.Stream,
+			Level:       base.Level,
+			Status:      base.Status,
+			CreateTime:  base.CreateTime.Unix(),
+			ExpireTime:  base.ExpireTime,
+			UpdateTime:  base.UpdateTime.Unix(),
 		}
 	}
-	return res, nil
-}
 
-func (a *AppService) AppDelete(ctx context.Context, req *m.AppDeleteReq) (res *basic.Response, err error) {
-	// 删除app
-	unitId := req.UnitAppConfig.UnitId
-	if err = a.AppMapper.Delete(ctx, unitId, req.Type); err != nil {
-		return nil, err
-	}
-
-	// 删除unit_model对应字段
-	if err = a.ModelMapper.UpdateAppid(ctx, unitId, req.Type, ""); err != nil {
-		return nil, err
-	}
-
-	return result.ResponseOk(), nil
-}
-
-func (a *AppService) AppGetPagesReq(ctx context.Context, req *m.AppGetPagesReq) (*m.AppGetPagesResp, error) {
-	p := req.GetPaginationOptions()
-	data, total, err := a.AppMapper.FindPagination(ctx, p, req.Type)
-	if err != nil {
-		return nil, err
-	}
-
-	var apps []*m.AppData
-	for _, app := range data {
-		apps = append(apps, WrapAppData(app))
-	}
-
-	return &m.AppGetPagesResp{
-		// TODO resp int32 -> int64
-		Total:    int32(total),
-		Page:     int32(*p.Page),
-		PageSize: int32(*p.Limit),
-	}, nil
-}
-
-func (a *AppService) createChat(ctx context.Context, detail *m.AppCreateReq_ChatApp, model *m.UnitAppConfig) (*m.AppCreateResp_ChatApp, error) {
-	now := time.Now()
-
-	// 插入app表
-	chatApp := detail.ChatApp
-	app := chatApp.App
-	id, err := a.AppMapper.InsertWithEcho(ctx, &appmapper.ChatApp{
-		App: appmapper.AppBase{
-			Name:        app.Name,
-			Description: app.Description,
-			Lang:        app.Lang,
-			Platform:    app.Platform,
-			Url:         app.Url,
-			Appid:       app.Appid,
-			Auth:        app.Auth,
-			Stream:      app.Stream,
-			Level:       app.Level,
-			Status:      consts.Active,
-			ExpireTime:  app.ExpireTime,
-			CreateTime:  now,
-			UpdateTime:  now,
-			Type:        consts.ChatApp,
-		},
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	// 插入unit_model表
-	err = a.ModelMapper.UpdateAppid(ctx, model.Id, consts.ChatApp, id)
-	if err != nil {
-		return nil, err
-	}
-
-	app.Id = id
-	app.CreateTime = now.Unix()
-	app.UpdateTime = now.Unix()
-	return &m.AppCreateResp_ChatApp{
-		ChatApp: &m.ChatApp{
-			App: app,
-		},
-	}, nil
-}
-
-func (a *AppService) createTts(ctx context.Context, detail *m.AppCreateReq_TtsApp, model *m.UnitAppConfig) (*m.AppCreateResp_TtsApp, error) {
-	now := time.Now()
-
-	// 插入app表
-	ttsApp := detail.TtsApp
-	app := ttsApp.App
-	id, err := a.AppMapper.InsertWithEcho(ctx, &appmapper.TtsApp{
-		App: appmapper.AppBase{
-			Name:        app.Name,
-			Description: app.Description,
-			Lang:        app.Lang,
-			Platform:    app.Platform,
-			Url:         app.Url,
-			Appid:       app.Appid,
-			Auth:        app.Auth,
-			Stream:      app.Stream,
-			Level:       app.Level,
-			Status:      consts.Active,
-			ExpireTime:  app.ExpireTime,
-			CreateTime:  now,
-			UpdateTime:  now,
-			Type:        consts.TtsApp,
-		},
-		Namespace:  ttsApp.Namespace,
-		Speaker:    ttsApp.Speaker,
-		ResourceId: ttsApp.ResourceId,
-		AudioParam: appmapper.AudioParam{
-			Format:       ttsApp.AudioParams.Format,
-			Rate:         ttsApp.AudioParams.Rate,
-			Bit:          ttsApp.AudioParams.Bit,
-			SpeechRate:   ttsApp.AudioParams.SpeechRate,
-			LoudnessRate: ttsApp.AudioParams.LoudnessRate,
-			Lang:         ttsApp.AudioParams.Lang,
-		},
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	// 插入unit_model表
-	err = a.ModelMapper.UpdateAppid(ctx, model.Id, consts.TtsApp, id)
-	if err != nil {
-		return nil, err
-	}
-
-	app.Id = id
-	app.CreateTime = now.Unix()
-	app.UpdateTime = now.Unix()
-	return &m.AppCreateResp_TtsApp{
-		TtsApp: &m.TtsApp{
-			App:        app,
-			Namespace:  ttsApp.Namespace,
-			Speaker:    ttsApp.Speaker,
-			ResourceId: ttsApp.ResourceId,
-			AudioParams: &m.TtsApp_AudioParam{
-				Format:       ttsApp.AudioParams.Format,
-				Rate:         ttsApp.AudioParams.Rate,
-				Bit:          ttsApp.AudioParams.Bit,
-				SpeechRate:   ttsApp.AudioParams.SpeechRate,
-				LoudnessRate: ttsApp.AudioParams.LoudnessRate,
-				Lang:         ttsApp.AudioParams.Lang,
-			},
-		},
-	}, nil
-}
-
-func (a *AppService) createAsr(ctx context.Context, detail *m.AppCreateReq_AsrApp, model *m.UnitAppConfig) (*m.AppCreateResp_AsrApp, error) {
-	now := time.Now()
-
-	// 插入app表
-	asrApp := detail.AsrApp
-	app := asrApp.App
-	id, err := a.AppMapper.InsertWithEcho(ctx, &appmapper.AsrApp{
-		App: appmapper.AppBase{
-			Name:        app.Name,
-			Description: app.Description,
-			Lang:        app.Lang,
-			Platform:    app.Platform,
-			Url:         app.Url,
-			Appid:       app.Appid,
-			Auth:        app.Auth,
-			Stream:      app.Stream,
-			Level:       app.Level,
-			Status:      consts.Active,
-			ExpireTime:  app.ExpireTime,
-			CreateTime:  now,
-			UpdateTime:  now,
-			Type:        consts.AsrApp,
-		},
-		Format:     asrApp.Format,
-		Codec:      asrApp.Codec,
-		Rate:       asrApp.Rate,
-		Bits:       asrApp.Bits,
-		Channels:   asrApp.Channels,
-		ModelName:  asrApp.ModelName,
-		EnablePunc: asrApp.EnablePunc,
-		EnableDdc:  asrApp.EnableDdc,
-		ResultType: asrApp.ResultType,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	// 插入unit_model表
-	err = a.ModelMapper.UpdateAppid(ctx, model.Id, consts.AsrApp, id)
-	if err != nil {
-		return nil, err
-	}
-
-	app.Id = id
-	app.CreateTime = now.Unix()
-	app.UpdateTime = now.Unix()
-	return &m.AppCreateResp_AsrApp{
-		AsrApp: &m.AsrApp{
-			App:        app,
-			Format:     asrApp.Format,
-			Codec:      asrApp.Codec,
-			Rate:       asrApp.Rate,
-			Bits:       asrApp.Bits,
-			Channels:   asrApp.Channels,
-			ModelName:  asrApp.ModelName,
-			EnablePunc: asrApp.EnablePunc,
-			EnableDdc:  asrApp.EnableDdc,
-			ResultType: asrApp.ResultType,
-		},
-	}, nil
-}
-
-func (a *AppService) createReport(ctx context.Context, detail *m.AppCreateReq_ReportApp, model *m.UnitAppConfig) (*m.AppCreateResp_ReportApp, error) {
-	now := time.Now()
-
-	// 插入app表
-	reportApp := detail.ReportApp
-	app := reportApp.App
-	id, err := a.AppMapper.InsertWithEcho(ctx, &appmapper.ReportApp{
-		App: appmapper.AppBase{
-			Name:        app.Name,
-			Description: app.Description,
-			Lang:        app.Lang,
-			Platform:    app.Platform,
-			Url:         app.Url,
-			Appid:       app.Appid,
-			Auth:        app.Auth,
-			Stream:      app.Stream,
-			Level:       app.Level,
-			Status:      consts.Active,
-			ExpireTime:  app.ExpireTime,
-			CreateTime:  now,
-			UpdateTime:  now,
-			Type:        consts.ReportApp,
-		},
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	// 插入unit_model表
-	err = a.ModelMapper.UpdateAppid(ctx, model.Id, consts.ReportApp, id)
-	if err != nil {
-		return nil, err
-	}
-
-	app.Id = id
-	app.CreateTime = now.Unix()
-	app.UpdateTime = now.Unix()
-	return &m.AppCreateResp_ReportApp{
-		ReportApp: &m.ReportApp{
-			App: app,
-		},
-	}, nil
-}
-
-func WrapAppData(app appmapper.AppInterface) *m.AppData {
-	base := app.GetBase()
-	appBase := &m.App{
-		Id:          base.ID.Hex(),
-		Name:        base.Name,
-		Description: base.Description,
-		Lang:        base.Lang,
-		Platform:    base.Platform,
-		Url:         base.Url,
-		Appid:       base.Appid,
-		Auth:        base.Auth,
-		Stream:      base.Stream,
-		Level:       base.Level,
-		Status:      base.Status,
-		CreateTime:  base.CreateTime.Unix(),
-		ExpireTime:  base.ExpireTime,
-		UpdateTime:  base.UpdateTime.Unix(),
-	}
-	switch a := app.(type) {
-	case *appmapper.ChatApp:
+	switch app.Type {
+	case consts.ChatApp:
 		return &m.AppData{
+			Type: consts.ChatApp,
 			App: &m.AppData_ChatApp{
 				ChatApp: &m.ChatApp{
 					App: appBase,
 				},
 			},
 		}
-	case *appmapper.TtsApp:
+	case consts.TtsApp:
+		a := app.App.(*appmapper.TtsApp)
 		return &m.AppData{
+			Type: consts.TtsApp,
 			App: &m.AppData_TtsApp{TtsApp: &m.TtsApp{
 				App:        appBase,
 				Namespace:  a.Namespace,
@@ -567,8 +217,10 @@ func WrapAppData(app appmapper.AppInterface) *m.AppData {
 				},
 			}},
 		}
-	case *appmapper.AsrApp:
+	case consts.AsrApp:
+		a := app.App.(*appmapper.AsrApp)
 		return &m.AppData{
+			Type: consts.AsrApp,
 			App: &m.AppData_AsrApp{AsrApp: &m.AsrApp{
 				App:        appBase,
 				Format:     a.Format,
@@ -582,11 +234,144 @@ func WrapAppData(app appmapper.AppInterface) *m.AppData {
 				ResultType: a.ResultType,
 			}},
 		}
-	case *appmapper.ReportApp:
+	case consts.ReportApp:
 		return &m.AppData{
-			App: &m.AppData_ReportApp{ReportApp: &m.ReportApp{App: appBase}},
+			Type: consts.ReportApp,
+			App:  &m.AppData_ReportApp{ReportApp: &m.ReportApp{App: appBase}},
 		}
 	default:
 		return nil // 或者 panic("unsupported app type")
+	}
+}
+
+func appGen2DB(appData *m.AppData) *appmapper.AppWrap {
+	app := appData.App
+	switch a := app.(type) {
+	case *m.AppData_ChatApp:
+		baseApp := a.ChatApp.App
+		oid, err := primitive.ObjectIDFromHex(baseApp.Id)
+		if err != nil {
+			return nil
+		}
+		return &appmapper.AppWrap{
+			ID:   oid,
+			Type: consts.ChatApp,
+			App: &appmapper.ChatApp{
+				AppBase: appmapper.AppBase{
+					Name:        baseApp.Name,
+					Description: baseApp.Description,
+					Lang:        baseApp.Lang,
+					Platform:    baseApp.Platform,
+					Url:         baseApp.Url,
+					AppId:       baseApp.AppId,
+					AccessKey:   baseApp.AccessKey,
+					Stream:      baseApp.Stream,
+					Level:       baseApp.Level,
+					Status:      baseApp.Status,
+					ExpireTime:  baseApp.ExpireTime,
+				},
+			},
+		}
+
+	case *m.AppData_TtsApp:
+		ttsApp := a.TtsApp
+		baseApp := ttsApp.App
+		oid, err := primitive.ObjectIDFromHex(baseApp.Id)
+		if err != nil {
+			return nil
+		}
+		return &appmapper.AppWrap{
+			ID:   oid,
+			Type: consts.TtsApp,
+			App: &appmapper.TtsApp{
+				AppBase: appmapper.AppBase{
+					Name:        baseApp.Name,
+					Description: baseApp.Description,
+					Lang:        baseApp.Lang,
+					Platform:    baseApp.Platform,
+					Url:         baseApp.Url,
+					AppId:       baseApp.AppId,
+					AccessKey:   baseApp.AccessKey,
+					Stream:      baseApp.Stream,
+					Level:       baseApp.Level,
+					Status:      baseApp.Status,
+					ExpireTime:  baseApp.ExpireTime,
+				},
+				Namespace:  ttsApp.Namespace,
+				Speaker:    ttsApp.Speaker,
+				ResourceId: ttsApp.ResourceId,
+				AudioParam: appmapper.AudioParam{
+					Format:       ttsApp.AudioParams.Format,
+					Rate:         ttsApp.AudioParams.Rate,
+					Bit:          ttsApp.AudioParams.Bit,
+					SpeechRate:   ttsApp.AudioParams.SpeechRate,
+					LoudnessRate: ttsApp.AudioParams.LoudnessRate,
+					Lang:         ttsApp.AudioParams.Lang,
+				},
+			},
+		}
+	case *m.AppData_AsrApp:
+		asrApp := a.AsrApp
+		baseApp := asrApp.App
+		oid, err := primitive.ObjectIDFromHex(baseApp.Id)
+		if err != nil {
+			return nil
+		}
+		return &appmapper.AppWrap{
+			ID:   oid,
+			Type: consts.AsrApp,
+			App: &appmapper.AsrApp{
+				AppBase: appmapper.AppBase{
+					Name:        baseApp.Name,
+					Description: baseApp.Description,
+					Lang:        baseApp.Lang,
+					Platform:    baseApp.Platform,
+					Url:         baseApp.Url,
+					AppId:       baseApp.AppId,
+					AccessKey:   baseApp.AccessKey,
+					Stream:      baseApp.Stream,
+					Level:       baseApp.Level,
+					Status:      baseApp.Status,
+					ExpireTime:  baseApp.ExpireTime,
+				},
+				Format:     asrApp.Format,
+				Codec:      asrApp.Codec,
+				Rate:       asrApp.Rate,
+				Bits:       asrApp.Bits,
+				Channels:   asrApp.Channels,
+				ModelName:  asrApp.ModelName,
+				EnablePunc: asrApp.EnablePunc,
+				EnableDdc:  asrApp.EnableDdc,
+				ResultType: asrApp.ResultType,
+			},
+		}
+	case *m.AppData_ReportApp:
+		reportApp := a.ReportApp
+		baseApp := reportApp.App
+		oid, err := primitive.ObjectIDFromHex(baseApp.Id)
+		if err != nil {
+			return nil
+		}
+		return &appmapper.AppWrap{
+			ID:   oid,
+			Type: consts.ReportApp,
+			App: &appmapper.ReportApp{
+				AppBase: appmapper.AppBase{
+					Name:        baseApp.Name,
+					Description: baseApp.Description,
+					Lang:        baseApp.Lang,
+					Platform:    baseApp.Platform,
+					Url:         baseApp.Url,
+					AppId:       baseApp.AppId,
+					AccessKey:   baseApp.AccessKey,
+					Stream:      baseApp.Stream,
+					Level:       baseApp.Level,
+					Status:      baseApp.Status,
+					ExpireTime:  baseApp.ExpireTime,
+				},
+			},
+		}
+	default:
+		return nil // panic("unsupported app type")
 	}
 }

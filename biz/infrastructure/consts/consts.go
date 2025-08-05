@@ -15,6 +15,7 @@ const (
 	Asr        = "asr"
 	Report     = "report"
 	Type       = "type"
+	ConfigId   = "config_id"
 )
 
 // status

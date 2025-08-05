@@ -49,22 +49,53 @@ func (m *MongoMapper) Update(ctx context.Context, appConfig *UnitAppConfig) erro
 	return err
 }
 
-func (m *MongoMapper) UpdateAppid(ctx context.Context, id string, types int32, appid string) error {
+func (m *MongoMapper) UpdateAppId(ctx context.Context, id string, types int32, appId string) error {
 	oid, err := primitive.ObjectIDFromHex(id)
 	var set bson.M
 	switch types {
 	case consts.ChatApp:
-		set = bson.M{consts.Chat: appid}
+		set = bson.M{consts.Chat: appId}
 	case consts.TtsApp:
-		set = bson.M{consts.Tts: appid}
+		set = bson.M{consts.Tts: appId}
 	case consts.AsrApp:
-		set = bson.M{consts.Asr: appid}
+		set = bson.M{consts.Asr: appId}
 	case consts.ReportApp:
-		set = bson.M{consts.Report: appid}
+		set = bson.M{consts.Report: appId}
 	}
 	set[consts.UpdateTime] = time.Now()
 	_, err = m.conn.UpdateByIDNoCache(ctx, oid, bson.M{"$set": set})
 	return err
+}
+
+func (m *MongoMapper) DeleteAppId(ctx context.Context, id string, types int32) (string, error) {
+	oid, err := primitive.ObjectIDFromHex(id)
+	var set bson.M
+	var appConfig UnitAppConfig
+	var appId string
+
+	if err = m.conn.FindOneNoCache(ctx, &appConfig, bson.M{
+		consts.ID: oid,
+	}); err != nil {
+		return "", err
+	}
+
+	switch types {
+	case consts.ChatApp:
+		set = bson.M{consts.Chat: ""}
+		appId = appConfig.Chat
+	case consts.TtsApp:
+		set = bson.M{consts.Tts: ""}
+		appId = appConfig.Tts
+	case consts.AsrApp:
+		set = bson.M{consts.Asr: ""}
+		appId = appConfig.Asr
+	case consts.ReportApp:
+		set = bson.M{consts.Report: ""}
+		appId = appConfig.Report
+	}
+	set[consts.UpdateTime] = time.Now()
+	_, err = m.conn.UpdateByIDNoCache(ctx, oid, bson.M{"$set": set})
+	return appId, err
 }
 
 func (m *MongoMapper) FindOneByUnitId(ctx context.Context, unitId string) (*UnitAppConfig, error) {

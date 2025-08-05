@@ -23,13 +23,14 @@ func NewProvider() (*adaptor.Server, error) {
 		return nil, err
 	}
 	mongoMapper := model.NewMongoMapper(configConfig)
+	appMongoMapper := app.NewMongoMapper(configConfig)
 	unitAppConfigService := &service.UnitAppConfigService{
-		UnitAppConfigMapper: mongoMapper,
+		ModelMapper: mongoMapper,
+		AppMapper:   appMongoMapper,
 	}
 	unitAppConfigController := &controller.UnitAppConfigController{
 		UnitAppConfigService: unitAppConfigService,
 	}
-	appMongoMapper := app.NewMongoMapper(configConfig)
 	appService := &service.AppService{
 		AppMapper:   appMongoMapper,
 		ModelMapper: mongoMapper,

@@ -11,8 +11,9 @@ import (
 type IAppController interface {
 	AppCreate(ctx context.Context, req *m.AppCreateReq) (res *m.AppCreateResp, err error)
 	AppUpdate(ctx context.Context, req *m.AppUpdateReq) (res *basic.Response, err error)
-	AppGetByUnitIdReq(ctx context.Context, req *m.AppGetByUnitIdReq) (res *m.AppGetByUnitIdResp, err error)
-	AppGetPagesReq(ctx context.Context, req *m.AppGetPagesReq) (res *m.AppGetPagesResp, err error)
+	AppGetByConfigId(ctx context.Context, req *m.AppGetByConfigIdReq) (res *m.AppGetByConfigIdResp, err error)
+	AppGetById(ctx context.Context, req *m.AppGetByIdReq) (res *m.AppGetByIdResp, err error)
+	AppList(ctx context.Context, req *m.AppListReq) (res *m.AppListResp, err error)
 	AppDelete(ctx context.Context, req *m.AppDeleteReq) (res *basic.Response, err error)
 }
 
@@ -33,12 +34,16 @@ func (a *AppController) AppUpdate(ctx context.Context, req *m.AppUpdateReq) (res
 	return a.AppService.AppUpdate(ctx, req)
 }
 
-func (a *AppController) AppGetByUnitIdReq(ctx context.Context, req *m.AppGetByUnitIdReq) (res *m.AppGetByUnitIdResp, err error) {
-	return a.AppService.AppGetByUnitIdReq(ctx, req)
+func (a *AppController) AppGetByConfigId(ctx context.Context, req *m.AppGetByConfigIdReq) (res *m.AppGetByConfigIdResp, err error) {
+	return a.AppService.AppGetByConfigId(ctx, req)
 }
 
-func (a *AppController) AppGetPagesReq(ctx context.Context, req *m.AppGetPagesReq) (res *m.AppGetPagesResp, err error) {
-	return a.AppService.AppGetPagesReq(ctx, req)
+func (a *AppController) AppGetById(ctx context.Context, req *m.AppGetByIdReq) (res *m.AppGetByIdResp, err error) {
+	return a.AppService.AppGetById(ctx, req)
+}
+
+func (a *AppController) AppList(ctx context.Context, req *m.AppListReq) (res *m.AppListResp, err error) {
+	return a.AppService.AppList(ctx, req)
 }
 
 func (a *AppController) AppDelete(ctx context.Context, req *m.AppDeleteReq) (res *basic.Response, err error) {
