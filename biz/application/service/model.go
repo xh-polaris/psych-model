@@ -9,6 +9,7 @@ import (
 	"github.com/xh-polaris/psych-model/biz/infrastructure/consts"
 	appmapper "github.com/xh-polaris/psych-model/biz/infrastructure/mapper/app"
 	mdlmapper "github.com/xh-polaris/psych-model/biz/infrastructure/mapper/model"
+	"github.com/xh-polaris/psych-model/biz/infrastructure/util/convert"
 	"github.com/xh-polaris/psych-model/biz/infrastructure/util/result"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -46,11 +47,15 @@ func (u *UnitAppConfigService) UnitAppConfigCreate(ctx context.Context, req *m.U
 	}
 
 	// 插入数据
+	form, err := convert.FormGen2DB(config.Form)
+	if err != nil {
+		return nil, err
+	}
 	id, err := u.ModelMapper.InsertWithEcho(ctx, &mdlmapper.UnitAppConfig{
 		UnitId: config.UnitId,
 		Name:   config.Name,
-		Video:  config.Video,
-		Option: config.Option,
+		View:   config.View,
+		Form:   form,
 		Status: consts.Active,
 	})
 	if err != nil {
@@ -62,8 +67,8 @@ func (u *UnitAppConfigService) UnitAppConfigCreate(ctx context.Context, req *m.U
 			Id:     id,
 			UnitId: config.UnitId,
 			Name:   config.Name,
-			Video:  config.Video,
-			Option: config.Option,
+			View:   config.View,
+			Form:   config.Form,
 			Status: consts.Active,
 		},
 	}, nil
@@ -78,11 +83,18 @@ func (u *UnitAppConfigService) UnitAppConfigUpdate(ctx context.Context, req *m.U
 	// 更新数据
 	config := req.GetUnitAppConfig()
 	oid, err := primitive.ObjectIDFromHex(config.Id)
+	if err != nil {
+		return nil, err
+	}
+	form, err := convert.FormGen2DB(config.Form)
+	if err != nil {
+		return nil, err
+	}
 	err = u.ModelMapper.Update(ctx, &mdlmapper.UnitAppConfig{
-		ID:     oid,
-		Name:   config.Name,
-		Video:  config.Video,
-		Option: config.Option,
+		ID:   oid,
+		Name: config.Name,
+		View: config.View,
+		Form: form,
 	})
 	if err != nil {
 		return nil, err
@@ -139,16 +151,20 @@ func (u *UnitAppConfigService) UnitAppConfigGetById(ctx context.Context, req *m.
 }
 
 func configDB2Gen(db *mdlmapper.UnitAppConfig) *m.UnitAppConfig {
+	form, err := convert.FormDB2Gen(db.Form)
+	if err != nil {
+		return nil
+	}
 	return &m.UnitAppConfig{
 		Id:         db.ID.Hex(),
 		UnitId:     db.UnitId,
 		Name:       db.Name,
-		Video:      db.Video,
+		View:       db.View,
 		Chat:       db.Chat,
 		Asr:        db.Asr,
 		Tts:        db.Tts,
 		Report:     db.Report,
-		Option:     db.Option,
+		Form:       form,
 		Status:     db.Status,
 		CreateTime: db.CreateTime.Unix(),
 		UpdateTime: db.UpdateTime.Unix(),
