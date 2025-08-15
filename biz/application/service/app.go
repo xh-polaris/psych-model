@@ -209,12 +209,16 @@ func appDB2Gen(app *appmapper.AppWrap, admin bool) *m.AppData {
 				ResourceId: a.ResourceId,
 				AudioParams: &m.TtsApp_AudioParam{
 					Format:       a.AudioParam.Format,
+					Codec:        a.AudioParam.Codec,
 					Rate:         a.AudioParam.Rate,
-					Bit:          a.AudioParam.Bit,
+					Bits:         a.AudioParam.Bits,
+					Channels:     a.AudioParam.Channels,
 					SpeechRate:   a.AudioParam.SpeechRate,
 					LoudnessRate: a.AudioParam.LoudnessRate,
 					Lang:         a.AudioParam.Lang,
+					ResultType:   a.AudioParam.ResultType,
 				},
+				Provider: a.Provider,
 			}},
 		}
 	case consts.AsrApp:
@@ -302,12 +306,16 @@ func appGen2DB(appData *m.AppData) *appmapper.AppWrap {
 				ResourceId: ttsApp.ResourceId,
 				AudioParam: appmapper.AudioParam{
 					Format:       ttsApp.AudioParams.Format,
+					Codec:        ttsApp.AudioParams.Codec,
 					Rate:         ttsApp.AudioParams.Rate,
-					Bit:          ttsApp.AudioParams.Bit,
+					Bits:         ttsApp.AudioParams.Bits,
+					Channels:     ttsApp.AudioParams.Channels,
 					SpeechRate:   ttsApp.AudioParams.SpeechRate,
 					LoudnessRate: ttsApp.AudioParams.LoudnessRate,
 					Lang:         ttsApp.AudioParams.Lang,
+					ResultType:   ttsApp.AudioParams.ResultType,
 				},
+				Provider: ttsApp.Provider,
 			},
 		}
 	case *m.AppData_AsrApp:

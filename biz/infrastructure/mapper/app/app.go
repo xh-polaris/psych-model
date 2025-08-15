@@ -47,11 +47,14 @@ type ChatApp struct {
 
 type AudioParam struct {
 	Format       string `bson:"format,omitempty" json:"format,omitempty"`
+	Codec        string `bson:"codec,omitempty" json:"codec,omitempty"`
 	Rate         int32  `bson:"rate,omitempty" json:"rate,omitempty"`
-	Bit          int32  `bson:"bit,omitempty" json:"bit,omitempty"`
+	Bits         int32  `bson:"bits,omitempty" json:"bits,omitempty"`
+	Channels     int32  `bson:"channels,omitempty" json:"channels,omitempty"`
 	SpeechRate   int32  `bson:"speech_rate,omitempty" json:"speechRate,omitempty"`
 	LoudnessRate int32  `bson:"loudness_rate,omitempty" json:"loudnessRate,omitempty"`
 	Lang         string `bson:"lang,omitempty" json:"lang,omitempty"`
+	ResultType   string `bson:"result_type,omitempty" json:"resultType,omitempty"`
 }
 type TtsApp struct {
 	AppBase    `bson:",inline"`
@@ -59,6 +62,7 @@ type TtsApp struct {
 	Speaker    string     `bson:"speaker,omitempty" json:"speaker,omitempty"`
 	ResourceId string     `bson:"resource_id,omitempty" json:"resourceId,omitempty"`
 	AudioParam AudioParam `bson:"audio_param,omitempty" json:"audioParam,omitempty"`
+	Provider   string     `bson:"provider,omitempty" json:"provider,omitempty"`
 }
 
 type AsrApp struct {
