@@ -29,6 +29,7 @@ type AppBase struct {
 	Description string    `bson:"description,omitempty" json:"description,omitempty"`
 	Lang        string    `bson:"lang,omitempty" json:"lang,omitempty"`
 	Platform    string    `bson:"platform,omitempty" json:"platform,omitempty"`
+	Provider    string    `bson:"provider,omitempty" json:"provider,omitempty"`
 	Url         string    `bson:"url,omitempty" json:"url,omitempty"`
 	AppId       string    `bson:"app_id,omitempty" json:"appId,omitempty"`
 	AccessKey   string    `bson:"access_key,omitempty" json:"accessKey,omitempty"`
@@ -62,7 +63,6 @@ type TtsApp struct {
 	Speaker    string     `bson:"speaker,omitempty" json:"speaker,omitempty"`
 	ResourceId string     `bson:"resource_id,omitempty" json:"resourceId,omitempty"`
 	AudioParam AudioParam `bson:"audio_param,omitempty" json:"audioParam,omitempty"`
-	Provider   string     `bson:"provider,omitempty" json:"provider,omitempty"`
 }
 
 type AsrApp struct {
@@ -71,6 +71,7 @@ type AsrApp struct {
 	Codec      string `bson:"codec,omitempty" json:"codec,omitempty"`
 	Rate       int32  `bson:"rate,omitempty" json:"rate,omitempty"`
 	Bits       int32  `bson:"bits,omitempty" json:"bits,omitempty"`
+	ResourceId string `bson:"resource_id,omitempty" json:"resourceId,omitempty"`
 	Channels   int32  `bson:"channels,omitempty" json:"channels,omitempty"`
 	ModelName  string `bson:"model_name,omitempty" json:"modelName,omitempty"`
 	EnablePunc bool   `bson:"enable_punc,omitempty" json:"enablePunc,omitempty"`

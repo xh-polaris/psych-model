@@ -161,6 +161,7 @@ func appDB2Gen(app *appmapper.AppWrap, admin bool) *m.AppData {
 			Description: base.Description,
 			Lang:        base.Lang,
 			Platform:    base.Platform,
+			Provider:    base.Provider,
 			Url:         base.Url,
 			AppId:       base.AppId,
 			AccessKey:   base.AccessKey,
@@ -178,6 +179,7 @@ func appDB2Gen(app *appmapper.AppWrap, admin bool) *m.AppData {
 			Description: base.Description,
 			Lang:        base.Lang,
 			Platform:    base.Platform,
+			Provider:    base.Provider,
 			Url:         base.Url,
 			Stream:      base.Stream,
 			Level:       base.Level,
@@ -218,7 +220,6 @@ func appDB2Gen(app *appmapper.AppWrap, admin bool) *m.AppData {
 					Lang:         a.AudioParam.Lang,
 					ResultType:   a.AudioParam.ResultType,
 				},
-				Provider: a.Provider,
 			}},
 		}
 	case consts.AsrApp:
@@ -236,6 +237,7 @@ func appDB2Gen(app *appmapper.AppWrap, admin bool) *m.AppData {
 				EnablePunc: a.EnablePunc,
 				EnableDdc:  a.EnableDdc,
 				ResultType: a.ResultType,
+				ResourceId: a.ResourceId,
 			}},
 		}
 	case consts.ReportApp:
@@ -253,9 +255,13 @@ func appGen2DB(appData *m.AppData) *appmapper.AppWrap {
 	switch a := app.(type) {
 	case *m.AppData_ChatApp:
 		baseApp := a.ChatApp.App
-		oid, err := primitive.ObjectIDFromHex(baseApp.Id)
-		if err != nil {
-			return nil
+		var oid primitive.ObjectID
+		var err error
+		if baseApp.Id != "" {
+			oid, err = primitive.ObjectIDFromHex(baseApp.Id)
+			if err != nil {
+				return nil
+			}
 		}
 		return &appmapper.AppWrap{
 			ID:   oid,
@@ -266,6 +272,7 @@ func appGen2DB(appData *m.AppData) *appmapper.AppWrap {
 					Description: baseApp.Description,
 					Lang:        baseApp.Lang,
 					Platform:    baseApp.Platform,
+					Provider:    baseApp.Provider,
 					Url:         baseApp.Url,
 					AppId:       baseApp.AppId,
 					AccessKey:   baseApp.AccessKey,
@@ -280,9 +287,13 @@ func appGen2DB(appData *m.AppData) *appmapper.AppWrap {
 	case *m.AppData_TtsApp:
 		ttsApp := a.TtsApp
 		baseApp := ttsApp.App
-		oid, err := primitive.ObjectIDFromHex(baseApp.Id)
-		if err != nil {
-			return nil
+		var oid primitive.ObjectID
+		var err error
+		if baseApp.Id != "" {
+			oid, err = primitive.ObjectIDFromHex(baseApp.Id)
+			if err != nil {
+				return nil
+			}
 		}
 		return &appmapper.AppWrap{
 			ID:   oid,
@@ -293,6 +304,7 @@ func appGen2DB(appData *m.AppData) *appmapper.AppWrap {
 					Description: baseApp.Description,
 					Lang:        baseApp.Lang,
 					Platform:    baseApp.Platform,
+					Provider:    baseApp.Provider,
 					Url:         baseApp.Url,
 					AppId:       baseApp.AppId,
 					AccessKey:   baseApp.AccessKey,
@@ -315,15 +327,18 @@ func appGen2DB(appData *m.AppData) *appmapper.AppWrap {
 					Lang:         ttsApp.AudioParams.Lang,
 					ResultType:   ttsApp.AudioParams.ResultType,
 				},
-				Provider: ttsApp.Provider,
 			},
 		}
 	case *m.AppData_AsrApp:
 		asrApp := a.AsrApp
 		baseApp := asrApp.App
-		oid, err := primitive.ObjectIDFromHex(baseApp.Id)
-		if err != nil {
-			return nil
+		var oid primitive.ObjectID
+		var err error
+		if baseApp.Id != "" {
+			oid, err = primitive.ObjectIDFromHex(baseApp.Id)
+			if err != nil {
+				return nil
+			}
 		}
 		return &appmapper.AppWrap{
 			ID:   oid,
@@ -334,6 +349,7 @@ func appGen2DB(appData *m.AppData) *appmapper.AppWrap {
 					Description: baseApp.Description,
 					Lang:        baseApp.Lang,
 					Platform:    baseApp.Platform,
+					Provider:    baseApp.Provider,
 					Url:         baseApp.Url,
 					AppId:       baseApp.AppId,
 					AccessKey:   baseApp.AccessKey,
@@ -346,6 +362,7 @@ func appGen2DB(appData *m.AppData) *appmapper.AppWrap {
 				Codec:      asrApp.Codec,
 				Rate:       asrApp.Rate,
 				Bits:       asrApp.Bits,
+				ResourceId: asrApp.ResourceId,
 				Channels:   asrApp.Channels,
 				ModelName:  asrApp.ModelName,
 				EnablePunc: asrApp.EnablePunc,
@@ -356,9 +373,13 @@ func appGen2DB(appData *m.AppData) *appmapper.AppWrap {
 	case *m.AppData_ReportApp:
 		reportApp := a.ReportApp
 		baseApp := reportApp.App
-		oid, err := primitive.ObjectIDFromHex(baseApp.Id)
-		if err != nil {
-			return nil
+		var oid primitive.ObjectID
+		var err error
+		if baseApp.Id != "" {
+			oid, err = primitive.ObjectIDFromHex(baseApp.Id)
+			if err != nil {
+				return nil
+			}
 		}
 		return &appmapper.AppWrap{
 			ID:   oid,
@@ -369,6 +390,7 @@ func appGen2DB(appData *m.AppData) *appmapper.AppWrap {
 					Description: baseApp.Description,
 					Lang:        baseApp.Lang,
 					Platform:    baseApp.Platform,
+					Provider:    baseApp.Provider,
 					Url:         baseApp.Url,
 					AppId:       baseApp.AppId,
 					AccessKey:   baseApp.AccessKey,
