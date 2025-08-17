@@ -13,7 +13,7 @@ import (
 
 const (
 	prefixUnitCacheKey = "cache:unit_app_config"
-	CollectionName     = "unit_app_config"
+	CollectionName     = consts.ConfigDB
 )
 
 type IMongoMapper interface {

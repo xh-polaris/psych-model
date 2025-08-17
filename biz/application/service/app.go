@@ -53,7 +53,6 @@ func (a *AppService) AppCreate(ctx context.Context, req *m.AppCreateReq) (res *m
 
 func (a *AppService) appCreate(ctx context.Context, app *m.AppData, configId string, types int32) (res *m.AppData, err error) {
 	appWrap := appGen2DB(app)
-	appWrap.ConfigId = configId
 
 	// 插入app db
 	id, err := a.AppMapper.InsertWithEcho(ctx, appWrap)
@@ -169,7 +168,6 @@ func appDB2Gen(app *appmapper.AppWrap, admin bool) *m.AppData {
 			Level:       base.Level,
 			Status:      base.Status,
 			CreateTime:  base.CreateTime.Unix(),
-			ExpireTime:  base.ExpireTime,
 			UpdateTime:  base.UpdateTime.Unix(),
 		}
 	} else {
@@ -185,7 +183,6 @@ func appDB2Gen(app *appmapper.AppWrap, admin bool) *m.AppData {
 			Level:       base.Level,
 			Status:      base.Status,
 			CreateTime:  base.CreateTime.Unix(),
-			ExpireTime:  base.ExpireTime,
 			UpdateTime:  base.UpdateTime.Unix(),
 		}
 	}
@@ -279,7 +276,6 @@ func appGen2DB(appData *m.AppData) *appmapper.AppWrap {
 					Stream:      baseApp.Stream,
 					Level:       baseApp.Level,
 					Status:      baseApp.Status,
-					ExpireTime:  baseApp.ExpireTime,
 				},
 			},
 		}
@@ -311,7 +307,6 @@ func appGen2DB(appData *m.AppData) *appmapper.AppWrap {
 					Stream:      baseApp.Stream,
 					Level:       baseApp.Level,
 					Status:      baseApp.Status,
-					ExpireTime:  baseApp.ExpireTime,
 				},
 				Namespace:  ttsApp.Namespace,
 				Speaker:    ttsApp.Speaker,
@@ -356,7 +351,6 @@ func appGen2DB(appData *m.AppData) *appmapper.AppWrap {
 					Stream:      baseApp.Stream,
 					Level:       baseApp.Level,
 					Status:      baseApp.Status,
-					ExpireTime:  baseApp.ExpireTime,
 				},
 				Format:     asrApp.Format,
 				Codec:      asrApp.Codec,
@@ -397,7 +391,6 @@ func appGen2DB(appData *m.AppData) *appmapper.AppWrap {
 					Stream:      baseApp.Stream,
 					Level:       baseApp.Level,
 					Status:      baseApp.Status,
-					ExpireTime:  baseApp.ExpireTime,
 				},
 			},
 		}

@@ -2,6 +2,8 @@ package consts
 
 // 数据库相关
 const (
+	AppDB      = "app"
+	ConfigDB   = "unit_app_config"
 	ID         = "_id"
 	UnitId     = "unit_id"
 	Status     = "status"
@@ -31,4 +33,10 @@ const (
 	TtsApp    = 1
 	AsrApp    = 2
 	ReportApp = 3
+)
+
+// level
+const (
+	// 定制模型
+	Special = -1
 )

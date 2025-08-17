@@ -6,6 +6,7 @@ import (
 	"github.com/xh-polaris/psych-idl/kitex_gen/basic"
 	"github.com/xh-polaris/psych-model/biz/infrastructure/config"
 	"github.com/xh-polaris/psych-model/biz/infrastructure/consts"
+	"github.com/xh-polaris/psych-model/biz/infrastructure/mapper/model"
 	util "github.com/xh-polaris/psych-model/biz/infrastructure/util/page"
 	"github.com/zeromicro/go-zero/core/stores/monc"
 	"go.mongodb.org/mongo-driver/bson"
@@ -15,21 +16,25 @@ import (
 )
 
 const (
-	prefixUnitCacheKey = "cache:app"
-	CollectionName     = "app"
+	prefixUnitCacheKey  = "cache:app"
+	AppCollectionName   = consts.AppDB
+	ModelCollectionName = consts.ConfigDB
 )
 
 type IMongoMapper interface {
 }
 
 type MongoMapper struct {
-	conn *monc.Model
+	conn     *monc.Model
+	linkConn *monc.Model
 }
 
 func NewMongoMapper(config *config.Config) *MongoMapper {
-	conn := monc.MustNewModel(config.Mongo.URL, config.Mongo.DB, CollectionName, config.Cache)
+	conn := monc.MustNewModel(config.Mongo.URL, config.Mongo.DB, AppCollectionName, config.Cache)
+	linkConn := monc.MustNewModel(config.Mongo.URL, config.Mongo.DB, ModelCollectionName, config.Cache)
 	return &MongoMapper{
-		conn: conn,
+		conn:     conn,
+		linkConn: linkConn,
 	}
 }
 
@@ -128,10 +133,31 @@ func (m *MongoMapper) DeleteOneById(ctx context.Context, id string) error {
 }
 
 func (m *MongoMapper) FindBatchByConfigId(ctx context.Context, configId string) ([]*AppWrap, error) {
+	var appConfig model.UnitAppConfig
+	oid, err := primitive.ObjectIDFromHex(configId)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := m.linkConn.FindOneNoCache(ctx, &appConfig, bson.M{consts.ID: oid}); err != nil {
+		return nil, err
+	}
+	var ids []string
+	ids = append(ids, appConfig.Chat)
+	ids = append(ids, appConfig.Tts)
+	ids = append(ids, appConfig.Asr)
+	ids = append(ids, appConfig.Report)
+	var objectIDs []primitive.ObjectID
+	for _, idStr := range ids {
+		oid, err := primitive.ObjectIDFromHex(idStr)
+		if err != nil {
+			continue
+		}
+		objectIDs = append(objectIDs, oid)
+	}
+
 	var raws []AppWrapRaw
-	err := m.conn.Find(ctx, &raws, bson.M{
-		consts.ConfigId: configId,
-	})
+	err = m.conn.Find(ctx, &raws, bson.M{consts.ID: bson.M{"$in": objectIDs}})
 	if err != nil {
 		if errors.Is(err, monc.ErrNotFound) {
 			return nil, consts.ErrNotFound
@@ -153,9 +179,8 @@ func (m *MongoMapper) FindBatchByConfigId(ctx context.Context, configId string) 
 
 func unmarshalAppByType(raw *AppWrapRaw) (*AppWrap, error) {
 	res := &AppWrap{
-		ID:       raw.ID,
-		Type:     raw.Type,
-		ConfigId: raw.ConfigId,
+		ID:   raw.ID,
+		Type: raw.Type,
 	}
 
 	switch raw.Type {
