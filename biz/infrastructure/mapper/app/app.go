@@ -11,17 +11,15 @@ type AppInterface interface {
 }
 
 type AppWrap struct {
-	ID       primitive.ObjectID `bson:"_id,omitempty" json:"id,omitempty"`
-	Type     int32              `bson:"type,omitempty"`
-	App      AppInterface       `bson:"app,omitempty"`
-	ConfigId string             `bson:"config_id,omitempty"`
+	ID   primitive.ObjectID `bson:"_id,omitempty" json:"id,omitempty"`
+	Type int32              `bson:"type,omitempty"`
+	App  AppInterface       `bson:"app,omitempty"`
 }
 
 type AppWrapRaw struct {
-	ID       primitive.ObjectID `bson:"_id,omitempty" json:"id,omitempty"`
-	Type     int32              `bson:"type,omitempty"`
-	App      bson.Raw           `bson:"app,omitempty"`
-	ConfigId string             `bson:"config_id,omitempty"`
+	ID   primitive.ObjectID `bson:"_id,omitempty" json:"id,omitempty"`
+	Type int32              `bson:"type,omitempty"`
+	App  bson.Raw           `bson:"app,omitempty"`
 }
 
 type AppBase struct {
@@ -36,7 +34,6 @@ type AppBase struct {
 	Stream      bool      `bson:"stream,omitempty" json:"stream,omitempty"`
 	Level       int32     `bson:"level,omitempty" json:"level,omitempty"`
 	Status      int32     `bson:"status,omitempty" json:"status,omitempty"`
-	ExpireTime  int64     `bson:"expire_time,omitempty" json:"expireTime,omitempty"`
 	CreateTime  time.Time `bson:"create_time,omitempty" json:"createTime,omitempty"`
 	UpdateTime  time.Time `bson:"update_time,omitempty" json:"updateTime,omitempty"`
 	DeleteTime  time.Time `bson:"delete_time,omitempty" json:"deleteTime,omitempty"`
